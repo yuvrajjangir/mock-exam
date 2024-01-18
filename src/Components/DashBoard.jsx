@@ -93,21 +93,20 @@ const Dashboard = ({ authStatus, setAuthStatus }) => {
   const indexOfFirstEmployee = indexOfLastEmployee - employeesPerPage;
   const currentEmployees = employees.slice(indexOfFirstEmployee, indexOfLastEmployee);
 
-  const paginate = (pageNumber) => setCurrentPage(pageNumber);
-
-
-
-   // Sorting
-   const requestSort = (key) => {
-    let direction = 'ascending';
-    if (sortConfig.key === key && sortConfig.direction === 'ascending') {
-      direction = 'descending';
-    }
-    setSortConfig({ key, direction });
+  const handleFilterChange = (event) => {
+    setDepartmentFilter(event.target.value);
+    setCurrentPage(1); // Reset current page when changing filters
   };
 
-  const sortedEmployees = useMemo(() => {
-    const sortableEmployees = [...currentEmployees];
+  // Search
+  const handleSearchChange = (event) => {
+    setSearchTerm(event.target.value);
+    setCurrentPage(1); // Reset current page when changing search term
+  };
+
+  const filteredAndSortedEmployees = useMemo(() => {
+    const sortableEmployees = [...employees];
+
     if (sortConfig.direction !== '') {
       sortableEmployees.sort((a, b) => {
         if (a[sortConfig.key] < b[sortConfig.key]) {
@@ -119,24 +118,25 @@ const Dashboard = ({ authStatus, setAuthStatus }) => {
         return 0;
       });
     }
-    return sortableEmployees;
-  }, [currentEmployees, sortConfig]);
 
-  // Filtering
-  const handleFilterChange = (event) => {
-    setDepartmentFilter(event.target.value);
-  };
+    const filteredEmployees = sortableEmployees.filter(
+      (employee) =>
+        employee.department.toLowerCase().includes(departmentFilter.toLowerCase()) &&
+        employee.firstName.toLowerCase().includes(searchTerm.toLowerCase())
+    );
 
-  const filteredEmployees = sortedEmployees.filter(
-    (employee) =>
-      employee.department.toLowerCase().includes(departmentFilter.toLowerCase()) &&
-      employee.firstName.toLowerCase().includes(searchTerm.toLowerCase())
+    return filteredEmployees;
+  }, [employees, sortConfig, departmentFilter, searchTerm]);
+
+  // Pagination for filtered and sorted data
+  const indexOfLastFilteredEmployee = currentPage * employeesPerPage;
+  const indexOfFirstFilteredEmployee = indexOfLastFilteredEmployee - employeesPerPage;
+  const paginatedEmployees = filteredAndSortedEmployees.slice(
+    indexOfFirstFilteredEmployee,
+    indexOfLastFilteredEmployee
   );
 
-  // Search
-  const handleSearchChange = (event) => {
-    setSearchTerm(event.target.value);
-  };
+  const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
   const handleAddEmployee = () => {
     setFormData({
@@ -278,7 +278,7 @@ const Dashboard = ({ authStatus, setAuthStatus }) => {
       )}
        <FormControl mb={4} display="flex" alignItems="center">
         <FormLabel>Filter by Department:</FormLabel>
-        <Select value={departmentFilter} onChange={handleFilterChange} ml={2}>
+        <Select value={departmentFilter} onChange={(e) => setDepartmentFilter(e.target.value)} ml={2}>
           <option value="">All</option>
           <option value="Tech">Tech</option>
           <option value="Marketing">Marketing</option>
@@ -296,18 +296,18 @@ const Dashboard = ({ authStatus, setAuthStatus }) => {
       <Table variant="simple">
         <Thead>
           <Tr>
-            <Th style={{cursor:"pointer"}} onClick={() => requestSort('firstName')}>First Name</Th>
-            <Th style={{cursor:"pointer"}} onClick={() => requestSort('lastName')}>Last Name</Th>
-            <Th style={{cursor:"pointer"}} onClick={() => requestSort('email')}>Email</Th>
-            <Th style={{cursor:"pointer"}} onClick={() => requestSort('department')}>Department</Th>
-            <Th style={{cursor:"pointer"}} onClick={() => requestSort('salary')}>Salary</Th>
+            <Th >First Name</Th>
+            <Th >Last Name</Th>
+            <Th >Email</Th>
+            <Th >Department</Th>
+            <Th >Salary</Th>
             <Th>Action</Th>
           </Tr>
         </Thead>
         
         <Tbody>
             
-          {filteredEmployees.map((employee) => (
+          {paginatedEmployees.map((employee) => (
             <Tr key={employee.id}>
               <Td>{employee.firstName}</Td>
               <Td>{employee.lastName}</Td>
@@ -335,7 +335,7 @@ const Dashboard = ({ authStatus, setAuthStatus }) => {
       </Table>
       <Pagination
         employeesPerPage={employeesPerPage}
-        totalEmployees={employees.length}
+        totalEmployees={filteredAndSortedEmployees.length}
         paginate={paginate}
         currentPage={currentPage}
       />
