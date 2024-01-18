@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Box,
   Button,
@@ -26,6 +26,8 @@ import {
   Spinner,
 } from '@chakra-ui/react';
 import { FaTrashAlt, FaEdit  } from 'react-icons/fa';
+import { useNavigate } from 'react-router-dom';
+import Pagination from './Pagination';
 
 const Dashboard = ({ authStatus, setAuthStatus }) => {
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -38,6 +40,12 @@ const Dashboard = ({ authStatus, setAuthStatus }) => {
     department: 'Tech',
     salary: '',
   });
+  const [currentPage, setCurrentPage] = useState(1);
+  const [employeesPerPage] = useState(5);
+  const [departmentFilter, setDepartmentFilter] = useState('');
+  const [sortConfig, setSortConfig] = useState({ key: '', direction: '' });
+  const [searchTerm, setSearchTerm] = useState('');
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const toast = useToast();
 
@@ -79,6 +87,56 @@ const Dashboard = ({ authStatus, setAuthStatus }) => {
     }
   }, [setAuthStatus]);
 
+
+  // Pagination
+  const indexOfLastEmployee = currentPage * employeesPerPage;
+  const indexOfFirstEmployee = indexOfLastEmployee - employeesPerPage;
+  const currentEmployees = employees.slice(indexOfFirstEmployee, indexOfLastEmployee);
+
+  const paginate = (pageNumber) => setCurrentPage(pageNumber);
+
+
+
+   // Sorting
+   const requestSort = (key) => {
+    let direction = 'ascending';
+    if (sortConfig.key === key && sortConfig.direction === 'ascending') {
+      direction = 'descending';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const sortedEmployees = useMemo(() => {
+    const sortableEmployees = [...currentEmployees];
+    if (sortConfig.direction !== '') {
+      sortableEmployees.sort((a, b) => {
+        if (a[sortConfig.key] < b[sortConfig.key]) {
+          return sortConfig.direction === 'ascending' ? -1 : 1;
+        }
+        if (a[sortConfig.key] > b[sortConfig.key]) {
+          return sortConfig.direction === 'ascending' ? 1 : -1;
+        }
+        return 0;
+      });
+    }
+    return sortableEmployees;
+  }, [currentEmployees, sortConfig]);
+
+  // Filtering
+  const handleFilterChange = (event) => {
+    setDepartmentFilter(event.target.value);
+  };
+
+  const filteredEmployees = sortedEmployees.filter(
+    (employee) =>
+      employee.department.toLowerCase().includes(departmentFilter.toLowerCase()) &&
+      employee.firstName.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  // Search
+  const handleSearchChange = (event) => {
+    setSearchTerm(event.target.value);
+  };
 
   const handleAddEmployee = () => {
     setFormData({
@@ -192,6 +250,7 @@ const Dashboard = ({ authStatus, setAuthStatus }) => {
   const handleLogout = () => {
     setAuthStatus(false);
     setEmployees([]);
+    navigate('/login');
     localStorage.removeItem('authToken');
     localStorage.removeItem('isAuthenticated');
     toast({
@@ -217,21 +276,38 @@ const Dashboard = ({ authStatus, setAuthStatus }) => {
           Logout
         </Button>
       )}
+       <FormControl mb={4} display="flex" alignItems="center">
+        <FormLabel>Filter by Department:</FormLabel>
+        <Select value={departmentFilter} onChange={handleFilterChange} ml={2}>
+          <option value="">All</option>
+          <option value="Tech">Tech</option>
+          <option value="Marketing">Marketing</option>
+          <option value="Operations">Operations</option>
+        </Select>
+        <Input
+          type="text"
+          placeholder="Search by First Name"
+          value={searchTerm}
+          onChange={handleSearchChange}
+          ml={4}
+        />
+      </FormControl>
+
       <Table variant="simple">
         <Thead>
           <Tr>
-            <Th>First Name</Th>
-            <Th>Last Name</Th>
-            <Th>Email</Th>
-            <Th>Department</Th>
-            <Th>Salary</Th>
+            <Th style={{cursor:"pointer"}} onClick={() => requestSort('firstName')}>First Name</Th>
+            <Th style={{cursor:"pointer"}} onClick={() => requestSort('lastName')}>Last Name</Th>
+            <Th style={{cursor:"pointer"}} onClick={() => requestSort('email')}>Email</Th>
+            <Th style={{cursor:"pointer"}} onClick={() => requestSort('department')}>Department</Th>
+            <Th style={{cursor:"pointer"}} onClick={() => requestSort('salary')}>Salary</Th>
             <Th>Action</Th>
           </Tr>
         </Thead>
         
         <Tbody>
             
-          {employees.map((employee) => (
+          {filteredEmployees.map((employee) => (
             <Tr key={employee.id}>
               <Td>{employee.firstName}</Td>
               <Td>{employee.lastName}</Td>
@@ -257,6 +333,12 @@ const Dashboard = ({ authStatus, setAuthStatus }) => {
           ))}
         </Tbody>
       </Table>
+      <Pagination
+        employeesPerPage={employeesPerPage}
+        totalEmployees={employees.length}
+        paginate={paginate}
+        currentPage={currentPage}
+      />
       {loading && (
         <Box textAlign="center" mt={4}>
           <Spinner size="xl" />
