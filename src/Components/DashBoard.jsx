@@ -24,8 +24,9 @@ import {
   FormControl,
   FormLabel,
   Spinner,
+  Icon,
 } from '@chakra-ui/react';
-import { FaTrashAlt, FaEdit  } from 'react-icons/fa';
+import { FaTrashAlt, FaEdit, FaArrowUp, FaArrowDown  } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import Pagination from './Pagination';
 
@@ -103,30 +104,46 @@ const Dashboard = ({ authStatus, setAuthStatus }) => {
     setSearchTerm(event.target.value);
     setCurrentPage(1); // Reset current page when changing search term
   };
-
+  const requestSort = (key) => {
+    let direction = 'ascending';
+    if (sortConfig.key === key && sortConfig.direction === 'ascending') {
+      direction = 'descending';
+    }
+    setSortConfig({ key, direction });
+  };
   const filteredAndSortedEmployees = useMemo(() => {
     const sortableEmployees = [...employees];
-
+  
     if (sortConfig.direction !== '') {
       sortableEmployees.sort((a, b) => {
-        if (a[sortConfig.key] < b[sortConfig.key]) {
-          return sortConfig.direction === 'ascending' ? -1 : 1;
+        if (sortConfig.key === 'salary') {
+          // Special case for sorting by salary (numeric)
+          return (
+            (parseInt(a[sortConfig.key]) - parseInt(b[sortConfig.key])) *
+            (sortConfig.direction === 'ascending' ? 1 : -1)
+          );
+        } else {
+          // Default string-based sorting
+          if (a[sortConfig.key] < b[sortConfig.key]) {
+            return sortConfig.direction === 'ascending' ? -1 : 1;
+          }
+          if (a[sortConfig.key] > b[sortConfig.key]) {
+            return sortConfig.direction === 'ascending' ? 1 : -1;
+          }
+          return 0;
         }
-        if (a[sortConfig.key] > b[sortConfig.key]) {
-          return sortConfig.direction === 'ascending' ? 1 : -1;
-        }
-        return 0;
       });
     }
-
+  
     const filteredEmployees = sortableEmployees.filter(
       (employee) =>
         employee.department.toLowerCase().includes(departmentFilter.toLowerCase()) &&
         employee.firstName.toLowerCase().includes(searchTerm.toLowerCase())
     );
-
+  
     return filteredEmployees;
   }, [employees, sortConfig, departmentFilter, searchTerm]);
+  
 
   // Pagination for filtered and sorted data
   const indexOfLastFilteredEmployee = currentPage * employeesPerPage;
@@ -300,7 +317,11 @@ const Dashboard = ({ authStatus, setAuthStatus }) => {
             <Th >Last Name</Th>
             <Th >Email</Th>
             <Th >Department</Th>
-            <Th >Salary</Th>
+            <Th style={{ cursor: 'pointer' }} onClick={() => requestSort('salary')}>
+              Salary {sortConfig.key === 'salary' && (
+                <Icon as={sortConfig.direction === 'ascending' ? FaArrowUp : FaArrowDown} />
+              )}
+            </Th>
             <Th>Action</Th>
           </Tr>
         </Thead>
