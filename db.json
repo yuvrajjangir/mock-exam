@@ -1,0 +1,36 @@
+{
+  "employees": [
+    {
+      "firstName": "Yuvraj",
+      "lastName": "Jangir",
+      "email": "jangiryuvi058@gmail.com",
+      "department": "Marketing",
+      "salary": "30000",
+      "id": 1
+    },
+    {
+      "firstName": "Rohan",
+      "lastName": "Jangir",
+      "email": "rohan058@gmail.com",
+      "department": "Operations",
+      "salary": "45000",
+      "id": 2
+    },
+    {
+      "firstName": "Yuvraj",
+      "lastName": "Jangir",
+      "email": "jangiryuvi058@gmail.com",
+      "department": "Operations",
+      "salary": "20000",
+      "id": 3
+    },
+    {
+      "firstName": "Yuvraj",
+      "lastName": "Jangir",
+      "email": "jangiryuvi058@gmail.com",
+      "department": "Operations",
+      "salary": "450000",
+      "id": 4
+    }
+  ]
+}
